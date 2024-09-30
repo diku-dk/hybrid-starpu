@@ -1,5 +1,5 @@
 CC?=gcc
-CFLAGS=$(shell pkg-config starpu-1.4 --cflags) -Wall -Wextra -Wno-deprecated-declarations
+CFLAGS=$(shell pkg-config starpu-1.4 --cflags) -Wall -Wextra -Wno-deprecated-declarations -Ofast
 LDFLAGS=$(shell pkg-config starpu-1.4 --libs) -lOpenCL
 
 mandelbrot: mandelbrot.c

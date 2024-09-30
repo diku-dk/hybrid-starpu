@@ -160,6 +160,11 @@ static void compute_block(void *descr[], void *cl_arg)
     }
 }
 
+static struct starpu_perfmodel model = {
+  .symbol = "mandelbrot_model",
+  .type = STARPU_REGRESSION_BASED
+};
+
 static struct starpu_codelet mandelbrot_cl =
   {
     .type = STARPU_SEQ,
@@ -167,7 +172,8 @@ static struct starpu_codelet mandelbrot_cl =
     .where = STARPU_CPU|STARPU_OPENCL,
     .opencl_funcs = {compute_block_opencl},
     .opencl_flags = {STARPU_OPENCL_ASYNC},
-    .nbuffers = 1
+    .nbuffers = 1,
+    .model = &model
   };
 
 static void parse_args(int argc, char **argv)

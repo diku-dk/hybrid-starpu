@@ -25,3 +25,6 @@ pretty low, e.g. 20), but significant slowdown when CPU is also used.
 ```
 $ ./mandelbrot -nblocks 20 -niter 10 -max_iter 10000 -height 20000 -width 20000
 ```
+
+The self-tuning of `STARPU_SCHED=dmdas` seems to make StarPU just
+disregard the CPU on subsequent invocations.

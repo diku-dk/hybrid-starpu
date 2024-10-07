@@ -31,10 +31,10 @@ static int width_p = 640;
 static int maxIt_p = 20000; /* max number of iteration in the Mandelbrot function */
 static int niter_p = 10; /* number of timing loops */
 
-static double leftX_p = -0.745;
-static double rightX_p = -0.74375;
-static double topY_p = .15;
-static double bottomY_p = .14875;
+static float leftX_p = -1.5;
+static float rightX_p = 0.5;
+static float topY_p = 1;
+static float bottomY_p = -1;
 
 /*
  *	OpenCL kernel
@@ -44,25 +44,25 @@ char *mandelbrot_opencl_src = "\
 #pragma OPENCL EXTENSION cl_khr_fp64 : enable\n				\
 #define MIN(a,b) (((a)<(b))? (a) : (b))					\n \
 __kernel void mandelbrot_kernel(__global unsigned* a,			\n \
-	double leftX, double topY,					\n \
-	double stepX, double stepY,					\n \
+	float leftX, float topY,					\n \
+	float stepX, float stepY,					\n \
 	int maxIt, int iby, int block_size, int width)			\n \
 {									\n \
 	size_t id_x = get_global_id(0);	\n				\
 	size_t id_y = get_global_id(1);	\n				\
 	if ((id_x < width) && (id_y < block_size))			\n \
 	{								\n \
-	double xc = leftX + id_x * stepX;				\n \
-	double yc = topY - (id_y + iby*block_size) * stepY;		\n \
+	float xc = leftX + id_x * stepX;				\n \
+	float yc = topY - (id_y + iby*block_size) * stepY;		\n \
 	int it;								\n \
-	double x,y;							\n \
-	x = y = (double)0.0;						\n \
+	float x,y;							\n \
+	x = y = (float)0.0;						\n \
 	for (it=0;it<maxIt;it++)					\n \
 	{								\n \
-		double x2 = x*x;					\n \
-		double y2 = y*y;					\n \
+		float x2 = x*x;					\n \
+		float y2 = y*y;					\n \
 		if (x2+y2 > 4.0) break;					\n \
-		double twoxy = (double)2.0*x*y;				\n \
+		float twoxy = (float)2.0*x*y;				\n \
 		x = x2 - y2 + xc;					\n \
 		y = twoxy + yc;						\n \
 	}								\n \
@@ -76,7 +76,7 @@ static struct starpu_opencl_program opencl_programs;
 static void compute_block_opencl(void *descr[], void *cl_arg)
 {
   int iby, block_size;
-  double stepX, stepY;
+  float stepX, stepY;
   int *pcnt; /* unused for CUDA tasks */
   starpu_codelet_unpack_args(cl_arg, &iby, &block_size, &stepX, &stepY, &pcnt);
 
@@ -117,7 +117,7 @@ static void compute_block_opencl(void *descr[], void *cl_arg)
 static void compute_block(void *descr[], void *cl_arg)
 {
   int iby, block_size;
-  double stepX, stepY;
+  float stepX, stepY;
   int *pcnt; /* unused for sequential tasks */
 
   starpu_codelet_unpack_args(cl_arg, &iby, &block_size, &stepX, &stepY, &pcnt);
@@ -132,22 +132,22 @@ static void compute_block(void *descr[], void *cl_arg)
       iy = iby*block_size + local_iy;
       for (ix = 0; ix < width_p; ix++)
         {
-          double cx = leftX_p + ix * stepX;
-          double cy = topY_p - iy * stepY;
+          float cx = leftX_p + ix * stepX;
+          float cy = topY_p - iy * stepY;
           /* Z = X+I*Y */
-          double x = 0;
-          double y = 0;
+          float x = 0;
+          float y = 0;
           int it;
           for (it = 0; it < maxIt_p; it++)
             {
-              double x2 = x*x;
-              double y2 = y*y;
+              float x2 = x*x;
+              float y2 = y*y;
 
               /* Stop iterations when |Z| > 2 */
               if (x2 + y2 > 4.0)
                 break;
 
-              double twoxy = 2.0*x*y;
+              float twoxy = 2.0*x*y;
 
               /* Z = Z^2 + C */
               x = x2 - y2 + cx;
@@ -169,7 +169,7 @@ static struct starpu_codelet mandelbrot_cl =
   {
     .type = STARPU_SEQ,
     .cpu_funcs = {compute_block},
-    .where = STARPU_CPU|STARPU_OPENCL,
+    .where = STARPU_OPENCL,
     .opencl_funcs = {compute_block_opencl},
     .opencl_flags = {STARPU_OPENCL_ASYNC},
     .nbuffers = 1,
@@ -207,7 +207,7 @@ static void parse_args(int argc, char **argv)
         }
 
       if (strcmp(argv[i], "-pos") == 0) {
-        int ret = sscanf(argv[++i], "%lf:%lf:%lf:%lf", &leftX_p, &rightX_p,
+        int ret = sscanf(argv[++i], "%f:%f:%f:%f", &leftX_p, &rightX_p,
                          &bottomY_p, &topY_p);
         assert(ret == 4);
       }
@@ -258,8 +258,8 @@ int main(int argc, char **argv)
   double start = seconds();
 
   for (int i = 0; i < niter_p; i++) {
-    double stepX = (rightX_p - leftX_p)/width_p;
-    double stepY = (topY_p - bottomY_p)/height_p;
+    float stepX = (rightX_p - leftX_p)/width_p;
+    float stepY = (topY_p - bottomY_p)/height_p;
 
     int per_block_cnt[nblocks_p];
 

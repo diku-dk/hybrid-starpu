@@ -28,3 +28,8 @@ $ ./mandelbrot -nblocks 20 -niter 10 -max_iter 10000 -height 20000 -width 20000
 
 The self-tuning of `STARPU_SCHED=dmdas` seems to make StarPU just
 disregard the CPU on subsequent invocations.
+
+## `spmv`
+
+I had to modify the code slightly to work with CBLAS. It seemed to be
+missing necessary includes in the upstream version.
